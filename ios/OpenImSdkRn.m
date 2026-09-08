@@ -1246,6 +1246,7 @@ RCT_EXPORT_METHOD(setAdvancedMsgListener) {
 // Third
 RCT_EXPORT_METHOD(unInitSDK:(NSString *)operationID resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter) {
     Open_im_sdkUnInitSDK(operationID);
+    resolver(nil);
 }
 
 RCT_EXPORT_METHOD(updateFcmToken:(NSString *)fcmToken expireTime:(nonnull NSNumber *)expireTime operationID:(NSString *)operationID resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter) {
