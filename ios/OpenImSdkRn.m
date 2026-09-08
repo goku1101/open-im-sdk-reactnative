@@ -44,6 +44,38 @@
 
 bool hasListeners;
 
+// Core has a process-wide singleton. Keep this gate across bridge instances;
+// all access is on methodQueue (main), including completion from Go callbacks.
+static BOOL lifecycleInFlight = NO;
+
+- (BOOL)beginLifecycle:(RCTPromiseRejectBlock)rejecter {
+    if (lifecycleInFlight) {
+        rejecter(@"OPENIM_LIFECYCLE_BUSY", @"Previous login or logout has not completed", nil);
+        return NO;
+    }
+    lifecycleInFlight = YES;
+    return YES;
+}
+
+- (RNCallbackProxy *)lifecycleProxy:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter {
+    __block BOOL completed = NO;
+    return [[RNCallbackProxy alloc] initWithCallback:^(id value) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completed) return;
+            completed = YES;
+            lifecycleInFlight = NO;
+            resolver(value);
+        });
+    } rejecter:^(NSString *code, NSString *message, NSError *error) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (completed) return;
+            completed = YES;
+            lifecycleInFlight = NO;
+            rejecter(code, message, error);
+        });
+    }];
+}
+
 - (dispatch_queue_t)methodQueue {
     return dispatch_get_main_queue();
 }
@@ -174,6 +206,7 @@ RCT_EXPORT_MODULE()
 
 RCT_EXPORT_METHOD(initSDK:(NSDictionary *)config operationID:(NSString *)operationID resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
   
+    if (![self beginLifecycle:reject]) return;
     NSMutableDictionary *newConfig = [config mutableCopy];
     [newConfig setObject:@1 forKey:@"platformID"];
   
@@ -185,6 +218,7 @@ RCT_EXPORT_METHOD(initSDK:(NSDictionary *)config operationID:(NSString *)operati
     Open_im_sdkSetAdvancedMsgListener(self);
     Open_im_sdkSetBatchMsgListener(self);
     Open_im_sdkSetCustomBusinessListener(self);
+    lifecycleInFlight = NO;
     if (flag) {
         resolve(@"init success");
     }else{
@@ -201,12 +235,14 @@ RCT_EXPORT_METHOD(setUserListener) {
 }
 
 RCT_EXPORT_METHOD(login:(NSDictionary *)options operationID:(NSString *)operationID resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter) {
-    RNCallbackProxy *proxy = [[RNCallbackProxy alloc] initWithCallback:resolver rejecter:rejecter];
+    if (![self beginLifecycle:rejecter]) return;
+    RNCallbackProxy *proxy = [self lifecycleProxy:resolver rejecter:rejecter];
     Open_im_sdkLogin(proxy, operationID, [options valueForKey:@"userID"], [options valueForKey:@"token"]);
 }
 
 RCT_EXPORT_METHOD(logout:(NSString *)operationID resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter) {
-    RNCallbackProxy * proxy = [[RNCallbackProxy alloc] initWithCallback:resolver rejecter:rejecter];
+    if (![self beginLifecycle:rejecter]) return;
+    RNCallbackProxy *proxy = [self lifecycleProxy:resolver rejecter:rejecter];
     Open_im_sdkLogout(proxy,operationID);
 }
 
@@ -1245,7 +1281,15 @@ RCT_EXPORT_METHOD(setAdvancedMsgListener) {
 
 // Third
 RCT_EXPORT_METHOD(unInitSDK:(NSString *)operationID resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter) {
+    if (![self beginLifecycle:rejecter]) return;
+    long status = Open_im_sdkGetLoginStatus(operationID);
+    if (status != 1 && status != -1001) {
+        lifecycleInFlight = NO;
+        rejecter(@"OPENIM_LOGOUT_REQUIRED", @"Wait for login and logout to complete before unInitSDK", nil);
+        return;
+    }
     Open_im_sdkUnInitSDK(operationID);
+    lifecycleInFlight = NO;
     resolver(nil);
 }
 
