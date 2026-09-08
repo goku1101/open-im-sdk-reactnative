@@ -122,7 +122,30 @@ RCT_EXPORT_MODULE()
 }
 
 - (void)pushEvent:(NSString *)eventName data:(id)data {
-    [self sendEventWithName:eventName body:data];
+    if (!hasListeners) {
+        return;
+    }
+
+    dispatch_block_t emitBlock = ^{
+        // RN 在 bridge/Bridgeless host 尚未注入 callableJSModules 时（冷启动、热更新、被踢回调早于 JS 就绪）
+        // 调用 sendEvent 会触发 RCTEventEmitter 内 RCTAssert 崩溃，先判空。
+        if (!self.callableJSModules) {
+            NSLog(@"[OpenIMSDKRN] drop event %@: JS runtime is not ready", eventName);
+            return;
+        }
+
+        @try {
+            [self sendEventWithName:eventName body:data];
+        } @catch (NSException *exception) {
+            NSLog(@"[OpenIMSDKRN] drop event %@ during bridge reload: %@", eventName, exception.reason);
+        }
+    };
+
+    if ([NSThread isMainThread]) {
+        emitBlock();
+    } else {
+        dispatch_async(dispatch_get_main_queue(), emitBlock);
+    }
 }
 
 - (NSDictionary *)parseJsonStr2Dict:(NSString *)jsonStr {
@@ -161,6 +184,7 @@ RCT_EXPORT_METHOD(initSDK:(NSDictionary *)config operationID:(NSString *)operati
     Open_im_sdkSetGroupListener(self);
     Open_im_sdkSetAdvancedMsgListener(self);
     Open_im_sdkSetBatchMsgListener(self);
+    Open_im_sdkSetCustomBusinessListener(self);
     if (flag) {
         resolve(@"init success");
     }else{

@@ -22,6 +22,7 @@ import com.openimsdkrn.listener.UploadLogProgressListener;
 import com.openimsdkrn.listener.UserListener;
 import com.openimsdkrn.listener.UploadFileCallbackListener;
 import com.openimsdkrn.listener.BatchMsgListener;
+import com.openimsdkrn.listener.SetCustomBusinessListener;
 import com.openimsdkrn.utils.Emitter;
 
 import java.util.ArrayList;
@@ -77,6 +78,7 @@ public class OpenImSdkRnModule extends ReactContextBaseJavaModule {
     setGroupListener();
     setAdvancedMsgListener();
     setBatchMsgListener();
+    setCustomBusinessListener();
 
     if (initialized) {
       promise.resolve("init success");
@@ -93,6 +95,11 @@ public class OpenImSdkRnModule extends ReactContextBaseJavaModule {
   @ReactMethod
   public void setBatchMsgListener() {
     Open_im_sdk.setBatchMsgListener(new BatchMsgListener(reactContext));
+  }
+
+  @ReactMethod
+  public void setCustomBusinessListener() {
+    Open_im_sdk.setCustomBusinessListener(new SetCustomBusinessListener(reactContext));
   }
 
   @ReactMethod
