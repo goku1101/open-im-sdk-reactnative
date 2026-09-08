@@ -1624,11 +1624,6 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
-"@evilmartians/lefthook@^1.2.2":
-  version "1.4.9"
-  resolved "https://registry.npmjs.org/@evilmartians/lefthook/-/lefthook-1.4.9.tgz"
-  integrity sha512-ZnROKwxDs8dJ+pmpXX2xHwU+Ui5P1Md5DMCIQsZCZHngtRb2jOwbUf7AaGJeYVoaC6J2Hb7IL2wYvwfwA2Oy3w==
-
 "@hapi/hoek@^9.0.0":
   version "9.3.0"
   resolved "https://registry.npmjs.org/@hapi/hoek/-/hoek-9.3.0.tgz"
