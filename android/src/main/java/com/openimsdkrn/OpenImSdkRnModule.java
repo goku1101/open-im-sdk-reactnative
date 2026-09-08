@@ -135,6 +135,11 @@ public class OpenImSdkRnModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
+  public void getConversationSyncState(String operationID, Promise promise) {
+    promise.resolve(Open_im_sdk.getConversationSyncState());
+  }
+
+  @ReactMethod
   public void getUsersInfo(ReadableArray userIDList, String operationID, Promise promise) {
     Open_im_sdk.getUsersInfo(new BaseImpl(promise), operationID, userIDList.toString());
   }

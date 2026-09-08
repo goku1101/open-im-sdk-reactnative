@@ -116,6 +116,7 @@ export interface NativeOpenIMSDKInterface {
   logout: (operationID: string) => Promise<unknown>;
   getLoginStatus: (operationID: string) => Promise<LoginStatus>;
   getLoginUserID: (operationID: string) => Promise<string>;
+  getConversationSyncState: (operationID: string) => Promise<string>;
   uploadFile: (
     params: UploadFileParams,
     operationID: string

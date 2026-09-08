@@ -266,6 +266,10 @@ RCT_EXPORT_METHOD(getLoginUserID:(NSString *)operationID resolver:(RCTPromiseRes
     resolver(uid);
 }
 
+RCT_EXPORT_METHOD(getConversationSyncState:(NSString *)operationID resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter) {
+    resolver(Open_im_sdkGetConversationSyncState());
+}
+
 RCT_EXPORT_METHOD(getUsersInfo:(NSArray *)uidList operationID:(NSString *)operationID resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter) {
     RNCallbackProxy * proxy = [[RNCallbackProxy alloc] initWithCallback:resolver rejecter:rejecter];
     Open_im_sdkGetUsersInfo(proxy,operationID,[uidList json]);

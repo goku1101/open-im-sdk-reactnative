@@ -16,6 +16,12 @@ import type {
   SessionType,
 } from './enum';
 
+export type ConversationSyncState = {
+  mode: 'uninitialized' | 'negotiating' | 'legacy' | 'v2';
+  phase: 'idle' | 'syncing' | 'ready' | 'failed';
+  progress: number;
+};
+
 export type MessageEntity = {
   type: string;
   offset: number;

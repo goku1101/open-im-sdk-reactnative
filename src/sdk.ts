@@ -1,7 +1,7 @@
 import Emitter from './emitter';
 import { OpenIMApiError } from './errors/OpenIMApiError';
 import NativeOpenIMSDK from './OpenIMSDK.native';
-import type { CardElem, MessageItem, SelfUserInfo } from './types/entity';
+import type { CardElem, ConversationSyncState, MessageItem, SelfUserInfo } from './types/entity';
 import type { MessageReceiveOptType } from './types/enum';
 import {
   AccessFriendParams,
@@ -136,6 +136,11 @@ class OpenIMSDK extends Emitter {
 
   getLoginUserID(operationID: string = id()) {
     return this.invoke(NativeOpenIMSDK.getLoginUserID, [operationID]);
+  }
+
+  async getConversationSyncState(operationID: string = id()): Promise<ConversationSyncState> {
+    const state = await this.invoke(NativeOpenIMSDK.getConversationSyncState, [operationID]);
+    return JSON.parse(state);
   }
 
   uploadFile(params: UploadFileParams, operationID: string = id()) {
