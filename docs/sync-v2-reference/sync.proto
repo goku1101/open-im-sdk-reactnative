@@ -1,0 +1,92 @@
+syntax = "proto3";
+package openim.syncv2;
+option go_package = "github.com/openimsdk/open-im-server/v3/pkg/syncv2/pb";
+import "conversation/conversation.proto";
+import "sdkws/sdkws.proto";
+
+message UserRequest { string userID = 1; }
+message Capabilities {
+  bool conversationSyncV2 = 1;
+  string policyVersion = 2;
+  int32 maxBatchSize = 3;
+  int32 maxPageSize = 4;
+  int32 snapshotTTLSeconds = 5;
+  int32 maxRequestBytes = 6;
+}
+message SnapshotRequest {
+  string userID = 1;
+  string snapshotID = 2;
+  string cursor = 3;
+  int32 pageSize = 4;
+  // "chat" or "notifications". Notification pages contain parent conversation IDs.
+  string scope = 5;
+}
+message SnapshotResponse {
+  string snapshotID = 1;
+  string cursor = 2;
+  bool hasMore = 3;
+  repeated string conversationIDs = 4;
+  int64 total = 5;
+  int64 expiresAt = 6;
+  string policyVersion = 7;
+  string versionID = 8;
+  uint64 version = 9;
+  string mode = 10;
+  string scope = 11;
+  // Fetch the authenticated user's self-notification stream on the first notification page.
+  bool includeSelf = 12;
+}
+message StateRequest {
+  string userID = 1;
+  repeated string conversationIDs = 2;
+  bool includeDetails = 3;
+  bool notifications = 4;
+  bool includeSelf = 5;
+}
+message State {
+  string conversationID = 1;
+  int64 minSeq = 2;
+  int64 maxSeq = 3;
+  int64 hasReadSeq = 4;
+  int64 unreadCount = 5;
+  int64 lastMessageTime = 6;
+  bool known = 7;
+  bool isPinned = 8;
+  // Opaque comparison token, not a monotonically increasing event version.
+  string stateToken = 9;
+  openim.conversation.Conversation conversation = 10;
+  // Actual permission cap (0 means unlimited), distinct from the growing tail.
+  int64 permissionMaxSeq = 11;
+}
+message StateResponse {
+  repeated State states = 1;
+  // Missing ownership; not proof of a deletion and must not delete local history.
+  repeated string unavailableIDs = 2;
+}
+message PullRequest {
+  string userID = 1;
+  // Parent conversation ID. Empty only for self notifications.
+  string conversationID = 2;
+  repeated int64 seqs = 3;
+  bool notifications = 4;
+  bool self = 5;
+  string stateToken = 6;
+}
+message PullResponse {
+  State state = 1;
+  repeated openim.sdkws.MsgData messages = 2;
+  // Missing storage/cache entries are not authoritative deletion tombstones.
+  repeated int64 unresolvedSeqs = 3;
+}
+message ReleaseRequest { string userID = 1; string snapshotID = 2; }
+message ReleaseResponse {}
+service MessageSync {
+  rpc Probe(UserRequest) returns (Capabilities);
+  rpc States(StateRequest) returns (StateResponse);
+  rpc Pull(PullRequest) returns (PullResponse);
+}
+service ConversationSync {
+  rpc Probe(UserRequest) returns (Capabilities);
+  rpc Snapshot(SnapshotRequest) returns (SnapshotResponse);
+  rpc Release(ReleaseRequest) returns (ReleaseResponse);
+}
