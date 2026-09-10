@@ -20,6 +20,8 @@ export type ConversationSyncState = {
   mode: 'uninitialized' | 'negotiating' | 'legacy' | 'v2';
   phase: 'idle' | 'syncing' | 'ready' | 'failed';
   progress: number;
+  /** 首屏已落库可读；不代表后台同步完成或允许写入。旧原生包不返回此字段。 */
+  initialDataReady?: boolean;
 };
 
 export type MessageEntity = {
