@@ -17,6 +17,15 @@ import type {
 } from './enum';
 
 export type ConversationSyncState = {
+  userID?: string;
+  storedMessages?: number;
+  detail?: {
+    stage: 'snapshot' | 'details' | 'notification_states' | 'contacts' | 'notifications' | 'messages' | 'changes' | 'publishing' | 'groups' | 'group_members' | 'friends' | 'profile' | 'blacklist';
+    currentGroupMembers?: number;
+    completed: number;
+    total?: number;
+    unit?: 'conversations' | 'streams' | 'groups' | 'friends';
+  };
   mode: 'uninitialized' | 'negotiating' | 'legacy' | 'v2';
   phase: 'idle' | 'syncing' | 'ready' | 'failed';
   progress: number;
