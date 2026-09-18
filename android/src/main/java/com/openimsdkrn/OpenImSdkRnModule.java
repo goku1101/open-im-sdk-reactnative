@@ -65,6 +65,12 @@ public class OpenImSdkRnModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
+  public void setEventSession(String session, Promise promise) {
+    Emitter.setEventSession(session);
+    promise.resolve(null);
+  }
+
+  @ReactMethod
   public void initSDK(ReadableMap options, String operationID, Promise promise) {
     WritableMap config = Arguments.createMap();
     config.merge(options);

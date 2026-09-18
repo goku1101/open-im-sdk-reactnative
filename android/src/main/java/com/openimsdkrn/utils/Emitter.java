@@ -16,10 +16,17 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 import java.math.BigDecimal;
 
 public class Emitter {
+  private static volatile String eventSession = "";
+
+  public static void setEventSession(String session) { eventSession = session; }
   public void send(ReactContext reactContext, String eventName, @Nullable Object params) {
+    java.util.Map<String, Object> values = new java.util.HashMap<>();
+    values.put("eventSession", eventSession);
+    values.put("data", params);
+    WritableMap envelope = Arguments.makeNativeMap(values);
     reactContext
       .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-      .emit(eventName, params);
+      .emit(eventName, envelope);
   }
 
   public WritableMap jsonStringToMap(String data) {

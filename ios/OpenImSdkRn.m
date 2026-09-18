@@ -40,6 +40,10 @@
 @end
 
 
+@interface OpenIMSDKRN ()
+@property (atomic, copy) NSString *eventSession;
+@end
+
 @implementation OpenIMSDKRN
 
 bool hasListeners;
@@ -153,12 +157,20 @@ RCT_EXPORT_MODULE()
     hasListeners = NO;
 }
 
+RCT_EXPORT_METHOD(setEventSession:(NSString *)session resolver:(RCTPromiseResolveBlock)resolver rejecter:(RCTPromiseRejectBlock)rejecter) {
+    self.eventSession = session;
+    resolver(nil);
+}
+
 - (void)pushEvent:(NSString *)eventName data:(id)data {
     if (!hasListeners) {
         return;
     }
 
+    NSString *sourceSession = self.eventSession;
+    NSDictionary *envelope = @{@"eventSession": sourceSession ?: @"", @"data": data ?: [NSNull null]};
     dispatch_block_t emitBlock = ^{
+        if (![sourceSession isEqualToString:self.eventSession]) return;
         // RN 在 bridge/Bridgeless host 尚未注入 callableJSModules 时（冷启动、热更新、被踢回调早于 JS 就绪）
         // 调用 sendEvent 会触发 RCTEventEmitter 内 RCTAssert 崩溃，先判空。
         if (!self.callableJSModules) {
@@ -167,7 +179,7 @@ RCT_EXPORT_MODULE()
         }
 
         @try {
-            [self sendEventWithName:eventName body:data];
+            [self sendEventWithName:eventName body:envelope];
         } @catch (NSException *exception) {
             NSLog(@"[OpenIMSDKRN] drop event %@ during bridge reload: %@", eventName, exception.reason);
         }

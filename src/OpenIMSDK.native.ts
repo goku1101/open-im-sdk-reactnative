@@ -1,3 +1,4 @@
+import { acceptsEventSession } from './eventSession';
 import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
 import {
   SelfUserInfo,
@@ -102,13 +103,26 @@ const NativeOpenIMSDK: NativeOpenIMSDKInterface = NativeModules.OpenIMSDKRN
       }
     );
 
+// Native upgrades are required for session fencing. Older installed binaries
+// keep their existing event shape until rebuilt; never claim fencing for them.
+export const hasEventSessionBridge = typeof NativeOpenIMSDK.setEventSession === 'function';
+
 export const NativeOpenIMEmitter = new NativeEventEmitter(NativeOpenIMSDK);
+const addNativeListener = NativeOpenIMEmitter.addListener.bind(NativeOpenIMEmitter);
+// Preserve public listener payloads, including the legacy OpenIMEmitter export.
+NativeOpenIMEmitter.addListener = (eventType, listener, context) =>
+  addNativeListener(eventType, envelope => {
+    if (!hasEventSessionBridge) listener.call(context, envelope);
+    else if (acceptsEventSession(envelope)) listener.call(context, envelope.data);
+  });
 
 export default NativeOpenIMSDK;
 
 export interface NativeOpenIMSDKInterface {
   addListener: (eventType: string) => void;
   removeListeners: (count: number) => void;
+
+  setEventSession: (session: string) => Promise<void>;
 
   // login
   initSDK: (params: InitOptions, operationID: string) => Promise<unknown>;

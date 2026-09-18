@@ -1,3 +1,5 @@
+import { hasEventSessionBridge } from './OpenIMSDK.native';
+import { setActiveEventSession } from './eventSession';
 import Emitter from './emitter';
 import { OpenIMApiError } from './errors/OpenIMApiError';
 import NativeOpenIMSDK from './OpenIMSDK.native';
@@ -117,16 +119,26 @@ class OpenIMSDK extends Emitter {
     }
   }
 
+  private async bindEventSession() {
+    if (!hasEventSessionBridge) return;
+    const session = id();
+    setActiveEventSession(session);
+    await this.invoke(NativeOpenIMSDK.setEventSession, [session]);
+  }
+
   // login
-  initSDK(params: InitOptions, operationID: string = id()) {
+  async initSDK(params: InitOptions, operationID: string = id()) {
+    await this.bindEventSession();
     return this.invoke(NativeOpenIMSDK.initSDK, [params, operationID]);
   }
 
-  login(params: LoginParams, operationID: string = id()) {
+  async login(params: LoginParams, operationID: string = id()) {
+    await this.bindEventSession();
     return this.invoke(NativeOpenIMSDK.login, [params, operationID]);
   }
 
   logout(operationID: string = id()) {
+    setActiveEventSession(null);
     return this.invoke(NativeOpenIMSDK.logout, [operationID]);
   }
 
@@ -622,6 +634,7 @@ class OpenIMSDK extends Emitter {
   }
 
   unInitSDK(operationID: string = id()) {
+    setActiveEventSession(null);
     return this.invoke(NativeOpenIMSDK.unInitSDK, [operationID]);
   }
 
